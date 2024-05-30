@@ -20,7 +20,7 @@ from scipy.optimize import minimize_scalar
 from scipy.integrate import cumtrapz
 from scipy.spatial.distance import cdist
 import copy
-from copylot import CoPylot
+# from copylot import CoPylot
 
 tol = np.finfo(float).eps # machine floating point precision
 
@@ -1372,6 +1372,7 @@ class field_model(base_model):
         
         self.helios = helios
 
+    """
     def optical_efficiency(self,plant,simulation_inputs,climate_file,verbose=True,n_az=10,n_el=10):
         helios = self.helios
         sim_in = simulation_inputs
@@ -1479,4 +1480,4 @@ class field_model(base_model):
                     for tt in range(T)] )
             _print_if("Done!",verbose)
         self.helios = helios
-
+    """

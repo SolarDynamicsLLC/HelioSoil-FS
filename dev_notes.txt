@@ -1,0 +1,6 @@
+Steps to use HelioSoil to estimate soiling in troughs for FieldStatus,
+assume each PT mirror is flat for first cut:
+	- Sun tracking function and geometry relations for PT mirrors
+	- Optical efficiency calculation for PT
+	- lift assumption that all mirrors are the same size
+	- Remove stow angle limitations (not sure if any implications in rest of code)
