@@ -196,10 +196,16 @@ def trim_experiment_data(simulation_inputs,reflectance_data,trim_ranges):
             ref_dat.prediction_indices[f] = []
             ref_dat.prediction_times[f] = []
             time_grid = sim_dat.time[f]
+            if time_grid.index.min() > 0:
+                time_grid.index = np.arange(0, len(time_grid))
             for m in ref_dat.times[f]:
-                ref_dat.prediction_indices[f].append(np.argmin(np.abs(m-time_grid)))        
-                ref_dat.prediction_times[f].append(time_grid[ref_dat.prediction_indices[f]])
-                ref_dat.rho0[f] = ref_dat.average[f][0,:]
+                try:
+                    ref_dat.prediction_indices[f].append(np.argmin(np.abs(m-time_grid)))
+                    ref_dat.prediction_times[f].append(time_grid[ref_dat.prediction_indices[f]])
+                    ref_dat.rho0[f] = ref_dat.average[f][0,:]
+                except KeyError:
+                    checklb = 1 if lb == m else 0
+                    checkub = 1 if ub == m else 0
     
     return sim_dat,ref_dat
 

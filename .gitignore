@@ -9,3 +9,8 @@ solarpilot.dll
 analysis_scripts/confidential/
 data/
 notes/
+.idea/HelioSoil-FS.iml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
