@@ -27,7 +27,7 @@ reflectometer_incidence_angle = 15  # angle of incidence of reflectometer
 reflectometer_acceptance_angle = 12.5e-3  # half acceptance angle of reflectance measurements
 k_factor = 2.404  # calibration factor for TSP measurements in experiments
 second_surf = True  # True if using the second-surface model. Otherwise, use first-surface
-d = "C:\\Users\\limpo\\SolarDynamics-code\\HelioSoil-FS\\solana-fixed\\"  # directory of parameter files (be sure to follow naming convention)
+d = "C:\\Users\\limpo\\SolarDynamics-code\\HelioSoil-FS\\solana-inputs\\"  # directory of parameter files (be sure to follow naming convention)
 test_time_at_end = [0, 0, 0, 0]  # amount of test time to leave at the end of each file
 parameter_file = d + "parameters_solana_exp.xlsx"
 
@@ -37,10 +37,10 @@ parameter_file = d + "parameters_solana_exp.xlsx"
 
 # In[ ]:
 
-train_experiments = [0, 1]  # indices for training experiments from 0 to len(files)-1
-train_mirrors = ["Mirror_1"]  # which mirrors within the experiments are used for training
+train_experiments = [0]  # indices for training experiments from 0 to len(files)-1
+train_mirrors = ["Mirror_3"]  # which mirrors within the experiments are used for training
 files_experiment, training_intervals, mirror_name_list, all_mirrors = smu.get_training_data(d, "experiment_")
-dust_type = "TSP"
+dust_type = "PM10"
 
 extract = lambda x, ind: [x[ii] for ii in ind]
 files_experiment_train = extract(files_experiment, train_experiments)
@@ -156,7 +156,7 @@ _, _, _ = constant_imodel.plot_soiling_factor(sim_data_train,
                                               reflectance_data=reflect_data_train,
                                               figsize=(10, 10),
                                               reflectance_std='mean',
-                                              save_path=save_file_root,
+                                              save_path=save_file_root + 'constant_mean_training.png',
                                               fig_title="On Training Data")
 
 # ### Predict with test data and plot
@@ -188,7 +188,10 @@ fig_total, ax_total, _, _, _ = constant_imodel.plot_soiling_factor(sim_data_tota
 for ii, e in enumerate(train_experiments):
     for jj, m in enumerate(all_mirrors):
         if m in train_mirrors:
-            a = ax_total[jj, e]
+            if len(ax_total.shape) == 1:
+                a = ax_total[jj]
+            else:
+                a = ax_total[jj, e]
             a.axvline(x=sim_data_train.time[ii][0], ls=':', color='red')
             a.axvline(x=sim_data_train.time[ii][sim_data_train.time[ii].index.max()], ls=':', color='red')
 
@@ -198,20 +201,20 @@ fig_total.subplots_adjust(wspace=0.1, hspace=0.3)
 
 # In[ ]:
 
-
+"""
 fig, ax = plot_for_paper(constant_imodel,
                          reflect_data_total,
                          sim_data_total,
                          train_experiments,
                          train_mirrors,
-                         [["N/A", "N/A", "N/A", "N/A", "N/A"] for m in range(4)],
+                         [["N/A", "N/A", "N/A", "N/A", "N/A", "N/A"]],
                          # note: these are not the actual orientations (the experimental values are actually the average of two orientations)
                          legend_shift=(0, 0),
                          rows_with_legend=[2],
                          num_legend_cols=4,
                          plot_rh=False)
 fig.savefig(cm_save_file + ".pdf", bbox_inches='tight')
-
+"""
 # ## High, Medium, Low daily loss distributions from total data
 
 # In[ ]:
@@ -261,7 +264,7 @@ mirror_idxs = list(range(len(all_mirrors)))
 test_experiments = [f for f in list(range(len(files_experiment))) if f not in train_experiments]
 train_mirror_idx = [m for m in mirror_idxs if all_mirrors[m] in train_mirrors]
 test_mirror_idx = [m for m in mirror_idxs if all_mirrors[m] not in train_mirrors]
-
+"""
 fig, ax = summarize_fit_quality(constant_imodel,
                                 reflect_data_total,
                                 train_experiments,
@@ -371,3 +374,4 @@ fit_quality_plots(constant_imodel,
 # ax.set_title("Loss change prediction quality assessment (constant mean)")
 ax.set_xlabel(r"Measured $\Delta$loss")
 ax.set_ylabel(r"Predicted $\Delta$loss")
+"""
