@@ -98,6 +98,207 @@ reflect_data_total = smb.reflectance_measurements(  files_experiment,
                                                     column_names_to_import=None
                                                     )
 
+imodel = smf.semi_physical(parameter_file)
+# ### Compute extinction weights for both simulation datasets and plot.
+# Note that the extinction weights depend only on the refractive index. If the refractive index is the same for all experiments, all extinction weights will be the same (and the computation will be faster.)
+
+# In[ ]:
+
+
+imodel.helios_angles(sim_data_train, reflect_data_train, second_surface=second_surf)
+imodel.helios.compute_extinction_weights(sim_data_train, imodel.loss_model, verbose=True)
+
+# Plot extinction weights and save for later, since extinction weights are the same for all files in this example.
+
+# In[ ]:
+
+
+imodel.helios.plot_extinction_weights(sim_data_train, fig_kwargs={'figsize': (20, 10)})
+ext_weights = imodel.helios.extinction_weighting[0].copy()
+
+# # Fit non-stochastic model
+
+# In[ ]:
+
+
+hrz0_multi, sse_multi = imodel.fit_least_squares(sim_data_train, reflect_data_train)
+imodel.update_model_parameters(hrz0_multi)
+imodel.save(ls_save_file,
+            training_simulation_data=sim_data_train,
+            training_reflectance_data=reflect_data_train)
+
+# Set extinction coefficients. Instead of computing, we set them directly using set_extinction_coefficients since we know that they are all the same (because the dust and acceptance angles of the measurement are all the same).
+
+# In[ ]:
+
+
+imodel.helios_angles(sim_data_total, reflect_data_total, second_surface=second_surf)
+
+# Use the below if extinction weights are not necessarily the same for each file
+# imodel.helios.compute_extinction_weights(sim_data_total,imodel.loss_model,verbose=True)
+
+# case where extinction weights are known to be the same as the ext_weights from the training file
+file_inds = np.arange(len(files_experiment))
+imodel = smu.set_extinction_coefficients(imodel, ext_weights, file_inds)
+
+# In[ ]:
+
+
+fig, ax, _, _, _ = imodel.plot_soiling_factor(sim_data_total,
+                                              reflectance_data=reflect_data_total,
+                                              figsize=(20, 20),
+                                              reflectance_std='measurements',
+                                              fig_title=training_string,
+                                              return_handles=True,
+                                              repeat_y_labels=False)
+# add lines indicating training times for mirrors
+# and experiments use for training.
+for ii, e in enumerate(train_experiments):
+    for jj, m in enumerate(all_mirrors):
+        if m in train_mirrors:
+            if len(ax.shape) == 1:
+                a = ax[jj]
+            else:
+                a = ax[jj, e]
+            a.axvline(x=sim_data_train.time[ii][0], ls=':', color='red')
+            a.axvline(x=sim_data_train.time[ii][sim_data_train.time[ii].index.max()], ls=':', color='red')
+fig.tight_layout()
+
+# # Parameter Estimation for the Stochastic Model
+
+# ## Semi-physical model
+
+# ### Compute deposition velocity, angles, and Mie Extinction Weights
+
+# In[ ]:
+
+
+imodel.helios_angles(sim_data_train,
+                     reflect_data_train,
+                     second_surface=second_surf)
+
+# Use the below if extinction weights are not necessarily the same for each file
+# imodel.helios.compute_extinction_weights(   sim_data_train,
+#                                             imodel.loss_model,
+#                                             verbose=True
+#                                             )
+
+# case where extinction weights are known to be the same as the ext_weights from the training file
+file_inds = np.arange(len(files_experiment_train))
+imodel = smu.set_extinction_coefficients(imodel, ext_weights, file_inds)
+
+# ### Fitting
+# Maximum Likelihood Estmation (MLE) or Maximum *A Posteriori* (MAP)
+
+# In[ ]:
+
+
+log_param_hat, log_param_cov = imodel.fit_mle(sim_data_train,
+                                              reflect_data_train,
+                                              transform_to_original_scale=False)
+
+s = np.sqrt(np.diag(log_param_cov))
+param_ci = log_param_hat + 1.96 * s * np.array([[-1], [1]])
+lower_ci = imodel.transform_scale(param_ci[0, :])
+upper_ci = imodel.transform_scale(param_ci[1, :])
+param_hat = imodel.transform_scale(log_param_hat)
+hrz0_mle, sigma_dep_mle = param_hat
+print(f'hrz0: {hrz0_mle:.2e} [{lower_ci[0]:.2e},{upper_ci[0]:.2e}]')
+print(f'\sigma_dep: {sigma_dep_mle:.2e} [{lower_ci[1]:.2e},{upper_ci[1]:.2e}] [p.p./day]')
+
+# # MAP Fitting
+# sigma_h = np.log(np.log(10.0))
+# mu_h = np.log(np.log(2.0))
+# sigma_sigma_dep = 5.0
+# mu_sigma_dep = -2.0
+# priors =    {   'log_log_hrz0': norm(scale=sigma_h,loc=mu_h),\
+#                 'log_sigma_dep': norm(scale=sigma_sigma_dep,loc=mu_sigma_dep)\
+#             }
+# param_hat,param_cov = imodel.fit_map(   sim_data_train,
+#                                         reflect_data_train,
+#                                         priors,verbose=True,
+#                                         transform_to_original_scale=True)
+
+
+hrz0_mle, sigma_dep_mle = param_hat
+imodel.update_model_parameters(param_hat)
+imodel.save(sp_save_file,
+            log_p_hat=log_param_hat,
+            log_p_hat_cov=log_param_cov,
+            training_simulation_data=sim_data_train,
+            training_reflectance_data=reflect_data_train)
+
+_, _, _ = imodel.plot_soiling_factor(sim_data_train,
+                                     reflectance_data=reflect_data_train,
+                                     figsize=(10, 10),
+                                     reflectance_std='mean',
+                                     save_path=save_file_root,
+                                     fig_title="On Training Data")
+
+# ### Predict with test data and plot
+
+# In[ ]:
+
+
+imodel.helios_angles(sim_data_total,
+                     reflect_data_total,
+                     second_surface=second_surf)
+
+# Use the below if extinction weights are not necessarily the same for each file
+# imodel.helios.compute_extinction_weights(   sim_data_total,
+#                                             imodel.loss_model,
+#                                             verbose=True
+#                                             )
+
+# case where extinction weights are known to be the same as the ext_weights from the training file
+file_inds = np.arange(len(files_experiment))
+imodel = smu.set_extinction_coefficients(imodel, ext_weights, file_inds)
+
+# In[ ]:
+
+
+fig_total, ax_total, _, _, _ = imodel.plot_soiling_factor(sim_data_total,
+                                                          reflectance_data=reflect_data_total,
+                                                          figsize=(12, 15),
+                                                          reflectance_std='mean',
+                                                          save_path=save_file_root + "semi_physical_fitting.png",
+                                                          fig_title=training_string + " (Semi-Physical)",
+                                                          return_handles=True,
+                                                          repeat_y_labels=False)
+
+# add lines indicating training times for mirrors
+# and experiments use for training.
+for ii, e in enumerate(train_experiments):
+    for jj, m in enumerate(all_mirrors):
+        if m in train_mirrors:
+            if len(ax_total.shape) == 1:
+                a = ax_total[jj]
+            else:
+                a = ax_total[jj, e]
+            a.axvline(x=sim_data_train.time[ii][0], ls=':', color='red')
+            a.axvline(x=sim_data_train.time[ii][sim_data_train.time[ii].index.max()], ls=':', color='red')
+
+fig_total.subplots_adjust(wspace=0.1, hspace=0.3)
+
+# ## Normalized reflectance plot for paper
+
+# In[ ]:
+
+"""
+fig, ax = plot_for_paper(imodel,
+                         reflect_data_total,
+                         sim_data_total,
+                         train_experiments,
+                         train_mirrors,
+                         [["N/A", "N/A", "N/A", "N/A", "N/A"] for m in range(4)],
+                         # note: these are not the actual orientations (the experimental values are actually the average of two orientations)
+                         legend_shift=(0, 0),
+                         rows_with_legend=[2],
+                         num_legend_cols=4,
+                         plot_rh=False)
+fig.savefig(sp_save_file + ".pdf", bbox_inches='tight')
+"""
+
 # ## Constant Mean Desposition Velocity
 # ### Compute deposition velocity, angles. Mie weights not needed for constant mean model. 
 

@@ -435,8 +435,8 @@ class semi_physical(base_model):
                     am = ax[0,0]
 
                 if reflectance_data is not None: # plot predictions and reflectance data
-                    m = reflectance_data.average[f][:,jj]
-                    r0 = self.helios.nominal_reflectance
+                    m = reflectance_data.average[f][:,jj] * 100
+                    r0 = self.helios.nominal_reflectance * 100
 
                     if reflectance_std == 'measurements':
                         s = reflectance_data.sigma[f][:,jj]
@@ -446,7 +446,7 @@ class semi_physical(base_model):
                         raise ValueError("reflectance_std="+reflectance_std+" not recognized. Must be either \"measurements\" or \"mean\" ")
 
                     # measurement plots
-                    error_two_sigma = 1.96*s
+                    error_two_sigma = 1.96*s * 100
                     a.errorbar(tr,m,yerr=error_two_sigma,label="Measurement mean")
 
                     # mean prediction plot
@@ -497,8 +497,8 @@ class semi_physical(base_model):
                     if repeat_y_labels or (ii==0):
                         ang = reflectance_data.reflectometer_incidence_angle[f]
                         s = a.set_ylabel(r"$\rho(t)$ at "+str(ang)+"$^{{\circ}}$")
-                    else:
-                        a.set_yticklabels([])
+                    # else:
+                    #     a.set_yticklabels([])
 
                 else: # reflectance is computed at heliostat incidence angle. Put average incidence angle on axis label
                     if repeat_y_labels or (ii>0):
@@ -527,7 +527,7 @@ class semi_physical(base_model):
             p = a2a.plot(ts,ws,color='green',label="Wind Speed ({0:.2f} m/s)".format(ws.mean()))
             ax_wind.append(a2a)
             a2a.tick_params(axis ='y', labelcolor = 'green')
-            a2a.set_ylim((0,ws_max))
+            # a2a.set_ylim((0,ws_max))
             
             if ii == 0: # ylabel for TSP on leftmost plot only
                 fs = r"{0:s} $\frac{{\mu g}}{{m^3}}$"
@@ -538,10 +538,10 @@ class semi_physical(base_model):
             if ii == N_experiments-1: # ylabel for wind speed on rightmost plot only
                 a2a.set_ylabel('Wind Speed (m/s)', color='green')
             else:
-                a2a.set_yticklabels([]) 
+                a2a.set_yticklabels([])
             
             a2.set_title(label_str.format(dust_conc.mean())+" \n, Wind Speed ({0:.2f} m/s)".format(ws.mean()),fontsize=10)
-        
+        """
         if N_experiments > 1:
 
             # share y axes for all reflectance measurments
@@ -562,13 +562,13 @@ class semi_physical(base_model):
             ymin = min([x.get_ylim()[0] for x in ax[0:-1].flatten()])
             for a in ax[0:-1]:
                 a.set_ylim(ymin,ymax)
-
+        """
         fig.autofmt_xdate()
-        if save_path != None:
-            fig.savefig(save_path)
 
         fig.suptitle(fig_title, fontsize=16)
         fig.tight_layout()
+        if save_path != None:
+            fig.savefig(save_path)
         if return_handles:
             return fig,ax,mean_predictions,CI_lower_predictions,CI_upper_predictions
         else:

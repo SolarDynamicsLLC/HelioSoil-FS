@@ -1,0 +1,20 @@
+Trying to test model with fit parameters, running into challenges:
+	Model is inherently setup for heliostat fields, need to think through parameters
+	Heliostat tracking built into field model
+	Think it will require some coding to decouple soiling model form QUT heliostat solar field model
+
+Latest analysis (sent to Sara in Aug 2024):
+	Manually fit the particle size distribution to the dust data over the time range of each experiment file
+	Manually calculated tracking angle and conversion to tilt angle
+	Consider half the trough as one big mirror (this way 4 measurements are taken on each mirror)
+*** Fitting completed with Solana datasets with no washing in between measurement:
+	better results for constant mean model
+	trouble fitting semi-physical model without actual weather data from plant
+	have weather data for 1 of the datasets, but have not added to exp file yet and tried fitting more complex models
+
+
+Steps to use HelioSoil to estimate soiling in troughs for FieldStatus,
+	- Sun tracking function and geometry relations for PT mirrors
+	- Optical efficiency calculation for PT? aybe constant is sufficient
+	- lift assumption that all mirrors are the same size (or maybe add additional input with relative size of mirrors)
+	- Remove stow angle limitations (not sure if any implications in rest of code)
